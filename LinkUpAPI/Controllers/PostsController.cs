@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.JsonWebTokens;
+using LinkUpAPI.Services;
+using System.IO;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,22 +16,24 @@ using Microsoft.IdentityModel.JsonWebTokens;
 public class PostsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IBlobStorageService _blobStorageService;
 
-    public PostsController(ApplicationDbContext context)
+    public PostsController(ApplicationDbContext context, IBlobStorageService blobStorageService)
     {
         _context = context;
+        _blobStorageService = blobStorageService;
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreatePost([FromBody] PostCreateModel model)
+    [DisableRequestSizeLimit]
+    public async Task<IActionResult> CreatePost([FromForm] PostCreateModel model)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        // Récupérer l'ID de l'utilisateur authentifié
-        var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (userIdClaim == null)
         {
             return Unauthorized();
@@ -37,12 +41,22 @@ public class PostsController : ControllerBase
 
         int userId = int.Parse(userIdClaim);
 
+        string mediaUrl = null;
+        if (model.MediaFile != null)
+        {
+            // Générer un nom de fichier unique
+            var fileName = $"{Guid.NewGuid()}_{model.MediaFile.FileName}";
+
+            // Télécharger le fichier sur Azure Blob Storage
+            mediaUrl = await _blobStorageService.UploadFileAsync(model.MediaFile, fileName);
+        }
+
         // Créer le post
         var post = new Post
         {
             UserId = userId,
             Content = model.Content,
-            MediaUrl = model.MediaUrl
+            MediaUrl = mediaUrl
         };
 
         _context.Posts.Add(post);
@@ -63,7 +77,7 @@ public class PostsController : ControllerBase
             {
                 Id = p.Id,
                 Content = p.Content,
-                MediaUrl = p.MediaUrl,
+                MediaUrl = p.MediaUrl != null ? _blobStorageService.GetBlobSasUri(Path.GetFileName(p.MediaUrl),60) : null,
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt,
                 User = new UserViewModel
@@ -88,7 +102,7 @@ public class PostsController : ControllerBase
             {
                 Id = p.Id,
                 Content = p.Content,
-                MediaUrl = p.MediaUrl,
+                MediaUrl = p.MediaUrl != null ? _blobStorageService.GetBlobSasUri(Path.GetFileName(p.MediaUrl), 60) : null,
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt,
                 User = new UserViewModel

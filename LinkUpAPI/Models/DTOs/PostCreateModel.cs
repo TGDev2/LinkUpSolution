@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace LinkUpAPI.Models.DTOs
 {
@@ -8,6 +9,6 @@ namespace LinkUpAPI.Models.DTOs
         [StringLength(500)]
         public string Content { get; set; }
 
-        public string? MediaUrl { get; set; }
+        public IFormFile MediaFile { get; set; }
     }
 }
