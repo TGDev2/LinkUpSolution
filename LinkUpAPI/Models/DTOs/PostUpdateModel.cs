@@ -2,12 +2,12 @@
 
 namespace LinkUpAPI.Models.DTOs
 {
-    public class PostCreateModel
+    public class PostUpdateModel
     {
         [Required]
         [StringLength(500)]
         public string Content { get; set; }
 
-        public string? MediaUrl { get; set; }
+        public string MediaUrl { get; set; }
     }
 }

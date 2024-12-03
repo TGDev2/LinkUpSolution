@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Debug);
 
 // Configuration Swagger pour le support JWT
 builder.Services.AddSwaggerGen(options =>
