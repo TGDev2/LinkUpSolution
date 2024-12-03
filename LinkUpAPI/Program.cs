@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using LinkUpAPI.Services;
+using LinkUpAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,9 +69,26 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            // Si la requête est pour le hub SignalR
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/notificationHub")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -80,6 +98,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapHub<NotificationHub>("/notificationHub");
+});
 
 app.UseHttpsRedirection();
 

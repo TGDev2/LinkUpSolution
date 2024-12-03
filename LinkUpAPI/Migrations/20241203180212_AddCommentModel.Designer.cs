@@ -4,6 +4,7 @@ using LinkUpAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LinkUpAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241203180212_AddCommentModel")]
+    partial class AddCommentModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -81,34 +83,6 @@ namespace LinkUpAPI.Migrations
                     b.HasIndex("PostId");
 
                     b.ToTable("Media");
-                });
-
-            modelBuilder.Entity("LinkUpAPI.Models.Notification", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("LinkUpAPI.Models.Post", b =>
@@ -204,17 +178,6 @@ namespace LinkUpAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Post");
-                });
-
-            modelBuilder.Entity("LinkUpAPI.Models.Notification", b =>
-                {
-                    b.HasOne("LinkUpAPI.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LinkUpAPI.Models.Post", b =>

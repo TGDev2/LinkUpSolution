@@ -189,4 +189,38 @@ public class PostsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchPosts(string query, int pageNumber = 1, int pageSize = 10)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest("La requête de recherche ne peut pas être vide.");
+        }
+
+        var posts = await _context.Posts
+            .Include(p => p.User)
+            .Where(p => p.Content.Contains(query))
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new PostViewModel
+            {
+                Id = p.Id,
+                Content = p.Content,
+                MediaUrl = p.MediaUrl,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt,
+                User = new UserViewModel
+                {
+                    Id = p.User.Id,
+                    Username = p.User.Username,
+                    IsProfilePublic = p.User.IsProfilePublic
+                }
+            })
+            .ToListAsync();
+
+        return Ok(posts);
+    }
+
 }
