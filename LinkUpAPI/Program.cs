@@ -9,13 +9,14 @@ using LinkUpAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuration de l'application
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
 
-// Add services to the container
+// Ajouter les services au conteneur
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Logging.AddConsole().SetMinimumLevel(LogLevel.Debug);
@@ -52,7 +53,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT Configuration
+// Configuration JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
@@ -83,7 +84,7 @@ builder.Services.AddAuthentication(options =>
 
             // Si la requête est pour le hub SignalR
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/notificationHub")))
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
             {
                 context.Token = accessToken;
             }
@@ -98,25 +99,24 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configuration du pipeline de traitement des requêtes HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Ordre correct des middlewares
+app.UseHttpsRedirection();
+app.UseRouting(); // Configure le routage avant les points de terminaison
+app.UseAuthentication(); // Middleware d'authentification JWT
+app.UseAuthorization(); // Middleware d'autorisation
+
+// Points de terminaison
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    endpoints.MapHub<NotificationHub>("/notificationHub");
+    endpoints.MapHub<NotificationHub>("/notificationHub"); // Point de terminaison pour SignalR
 });
-
-app.UseHttpsRedirection();
-
-// Authentication and Authorization Middleware
-app.UseAuthentication(); // Validate the JWT
-app.UseAuthorization(); // Apply authorization policies
-
-app.MapControllers();
 
 app.Run();
